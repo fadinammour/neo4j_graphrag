@@ -1,7 +1,7 @@
 **/.env
 **/neo4j_auth.txt
-./uv.lock
+**/uv.lock
 
-./volumes/
+**/volumes/
 **/.DS_Store
 **/.ipynb_checkpoints/
