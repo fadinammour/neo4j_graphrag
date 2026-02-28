@@ -1,0 +1,15 @@
+FROM python:3.12-slim
+
+RUN pip install mcp-neo4j-cypher "fastmcp<3.0.0"
+
+ENV PYTHONWARNINGS="ignore"
+ENV FASTMCP_LOG_LEVEL="WARNING"
+
+RUN echo '#!/bin/bash' > /usr/local/bin/run-mcp.sh && \
+    echo 'AUTH_STR=$(cat /run/secrets/neo4j_auth_file | tr -d "\r\n")' >> /usr/local/bin/run-mcp.sh && \
+    echo 'export NEO4J_USERNAME="${AUTH_STR%%/*}"' >> /usr/local/bin/run-mcp.sh && \
+    echo 'export NEO4J_PASSWORD="${AUTH_STR##*/}"' >> /usr/local/bin/run-mcp.sh && \
+    echo 'exec mcp-neo4j-cypher "$@"' >> /usr/local/bin/run-mcp.sh && \
+    chmod +x /usr/local/bin/run-mcp.sh
+
+CMD ["tail", "-f", "/dev/null"]

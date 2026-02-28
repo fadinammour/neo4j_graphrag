@@ -1,0 +1,43 @@
+services:
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j_db
+    volumes:
+      - ./volumes/neo4j/logs:/logs
+      - ./volumes/neo4j/config:/config
+      - ./volumes/neo4j/data:/data
+      - ./volumes/neo4j/plugins:/plugins
+    environment:
+      - NEO4J_AUTH_FILE=/run/secrets/neo4j_auth_file
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    secrets:
+      - neo4j_auth_file
+    networks:
+      - rag_network
+
+  mcp-neo4j:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: mcp_server
+    secrets:
+      - neo4j_auth_file
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - FASTMCP_STATELESS_HTTP=1
+    depends_on:
+      - neo4j
+    networks:
+      - rag_network
+
+networks:
+  rag_network:
+    driver: bridge
+
+secrets:
+  neo4j_auth_file:
+    file: ./neo4j_auth.txt

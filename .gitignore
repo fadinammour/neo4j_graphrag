@@ -1,0 +1,5 @@
+./.env
+./neo4j_auth.txt
+
+./volumes/
+**/.DS_Store
