@@ -1,3 +1,7 @@
+# # Classical RAG on Neo4J Graph
+
+# ## Load libraries
+
 import os
 from dotenv import load_dotenv
 
@@ -6,6 +10,8 @@ from langchain_ollama import OllamaEmbeddings, ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+
+# ## Setup Neo4J and Ollama servers
 
 load_dotenv()
 
@@ -18,6 +24,8 @@ CHAT_LLM_NAME = os.getenv("CHAT_LLM_NAME")
 embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL_NAME)
 llm = ChatOllama(model=CHAT_LLM_NAME, temperature=0)
 
+# ## Initialise RAG chain
+
 vector_index = Neo4jVector.from_existing_graph(
     embeddings,
     url=NEO4J_URI,
@@ -28,9 +36,6 @@ vector_index = Neo4jVector.from_existing_graph(
     text_node_properties=['name', 'description', 'status'],
     embedding_node_property='embedding',
 )
-
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
 
 template = """Use the following pieces of retrieved context to answer the question. 
 If you don't know the answer, say that you don't know.
@@ -44,6 +49,10 @@ Answer:"""
 
 prompt = ChatPromptTemplate.from_template(template)
 
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
 rag_chain = (
     {"context": vector_index.as_retriever() | format_docs, "question": RunnablePassthrough()}
     | prompt
@@ -56,7 +65,12 @@ rag_chain = (
 
 # print(f"\n--- Final Answer ---\n{response}")
 
-print(f"\n--- Final Answer ---\n{rag_chain.invoke('How many open tickets are there?')}")
+question = 'How many open tickets are there?'
+print(f"\n--- Question ---\n{question}")
+
+print(f"\n--- Final Answer ---\n{rag_chain.invoke(question)}")
+
+# ## Match answer with correct graph query
 
 graph = Neo4jGraph(
     url=NEO4J_URI,
