@@ -60,14 +60,14 @@ rag_chain = (
     | StrOutputParser()
 )
 
-# query = "How will recommendation service be updated?"
-# response = rag_chain.invoke(query)
+# ## Ask questions
 
-# print(f"\n--- Final Answer ---\n{response}")
+question = "How will recommendation service be updated?"
+print(f"\n--- Question ---\n{question}")
+print(f"\n--- Final Answer ---\n{rag_chain.invoke(question)}")
 
 question = 'How many open tickets are there?'
 print(f"\n--- Question ---\n{question}")
-
 print(f"\n--- Final Answer ---\n{rag_chain.invoke(question)}")
 
 # ## Match answer with correct graph query
@@ -80,5 +80,5 @@ graph = Neo4jGraph(
 
 number_of_open_tickets = graph.query(
     "MATCH (t:Task {status:'Open'}) RETURN count(*)"
-)
+)[0]['count(*)']
 print(f"Result of graph query of open tickets: {number_of_open_tickets}")

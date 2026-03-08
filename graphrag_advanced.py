@@ -1,12 +1,17 @@
+# # Advanced Graph RAG implementation
+
+# ## Load libraries
+
 import os
 from dotenv import load_dotenv
 from langchain_neo4j import Neo4jGraph, GraphCypherQAChain
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 
+# ## Setup Neo4J and Ollama servers
+
 load_dotenv()
 
-# 1. Initialize Graph
 graph = Neo4jGraph(
     url=os.getenv("NEO4J_URI"),
     username=os.getenv("NEO4J_USERNAME"),
@@ -14,15 +19,16 @@ graph = Neo4jGraph(
 )
 graph.refresh_schema()
 
-# 2. Setup Ollama Models
 CHAT_LLM_NAME = os.getenv("CHAT_LLM_NAME") 
 CYPHER_LLM_NAME = os.getenv("CYPHER_LLM_NAME")
+
+# ## Initialise Graph RAG chain
 
 cypher_llm = ChatOllama(model=CYPHER_LLM_NAME, temperature=0)
 qa_llm = ChatOllama(model=CHAT_LLM_NAME, temperature=0)
 
-# 3. Improved Cypher Generation Prompt
-# Added explicit mapping for "Database" to d.name to solve the empty context issue
+# A specific instruction prompt is given for writing robust cypher instructions.
+
 CYPHER_GENERATION_TEMPLATE = """Task: Generate a Cypher query to answer a user's question.
 Schema: {schema}
 Question: {question}
@@ -42,6 +48,8 @@ cypher_prompt = PromptTemplate(
     input_variables=["schema", "question"]
 )
 
+# A specific instruction prompt is given for answering questions, mainly how to interpret cypher outputs.
+
 QA_TEMPLATE = """Task: Answer the question using the provided graph database results.
 
 Question: {question}
@@ -60,7 +68,6 @@ qa_prompt = PromptTemplate(
     input_variables=["question", "context"]
 )
 
-# 5. Initialize the Chain
 cypher_chain = GraphCypherQAChain.from_llm(
     cypher_llm=cypher_llm,
     qa_llm=qa_llm,
@@ -71,10 +78,21 @@ cypher_chain = GraphCypherQAChain.from_llm(
     allow_dangerous_requests=True
 )
 
-# --- Execution ---
+# ## Ask questions
+
+question = "How many open tickets there are?"
+print(f"\n--- Question ---\n{question}")
+response = cypher_chain.invoke({"query": question})
+print(f"Result: {response['result']}")
+
+# Match answer with correct graph query
+
+number_of_open_tickets = graph.query(
+    "MATCH (t:Task {status:'Open'}) RETURN count(*)"
+)[0]['count(*)']
+print(f"Result of graph query of open tickets: {number_of_open_tickets}")
 
 questions = [
-    "How many open tickets there are?",
     "How many open tickets there are assigned to TeamA??",
     "Which team has the most open tasks?",
     "Which services depend on Database directly?",
@@ -83,8 +101,5 @@ questions = [
 
 for q in questions:
     print(f"\n--- Question ---\n{q}")
-    try:
-        response = cypher_chain.invoke({"query": q})
-        print(f"Result: {response['result']}")
-    except Exception as e:
-        print(f"Error processing question: {e}")
+    response = cypher_chain.invoke({"query": q})
+    print(f"Result: {response['result']}")

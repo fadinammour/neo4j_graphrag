@@ -1,3 +1,7 @@
+# # MCP Graph RAG implementation
+
+# ## Load libraries
+
 import os
 import asyncio
 from dotenv import load_dotenv
@@ -7,6 +11,8 @@ from langchain_ollama import ChatOllama
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage, SystemMessage
+
+# ## Setup Neo4J and Ollama servers
 
 load_dotenv()
 
@@ -24,6 +30,10 @@ server_params = StdioServerParameters(
     ],
     env=os.environ
 )
+
+# ## Initialise Graph RAG chain
+
+# Write instruction prompt.
 
 SYSTEM_PROMPT = """You are a Neo4j Graph Database Expert. Answer the user's questions by querying the database.
 
@@ -74,6 +84,8 @@ async def main(questions):
                 final_message = values["messages"][-1]
                 print(f"\n✅ Answer:\n{final_message.content}")
 
+# ## Ask questions
+
 if __name__ == "__main__":
     questions = [
         "How many open tickets there are?",
@@ -82,4 +94,12 @@ if __name__ == "__main__":
         "Which services depend on Database directly?",
         "Which services depend on Database indirectly?"
     ]
-    asyncio.run(main(questions))
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    
+    if loop and loop.is_running():
+        task = loop.create_task(main(questions))
+    else:
+        asyncio.run(main(questions))
