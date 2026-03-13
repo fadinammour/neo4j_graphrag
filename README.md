@@ -51,7 +51,7 @@ uv run python create_graph.py
 uv run jupyter notebook
 ```
 
-2. To run a python script as a notebook, wrtie click on it and run it as a Jupytext notebook. Run the scripts in the following order:
+2. To run a python script as a notebook, right click on it and run it as a Jupytext notebook. Run the scripts in the following order:
 - `vector_index.py`
 - `graphrag.py`
 - `advcanced_graphrag.py`
